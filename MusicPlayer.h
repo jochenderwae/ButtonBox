@@ -1,6 +1,9 @@
 #ifndef MusicPlayer_h
 #define MusicPlayer_h
 
+/*
+ * This code is adapted from https://github.com/robsoncouto/arduino-songs/
+ */
 
 #define NOTE_B0  31
 #define NOTE_C1  33
@@ -92,25 +95,40 @@
 #define NOTE_D8  4699
 #define NOTE_DS8 4978
 #define REST 0
+
+#define FULL 1
+#define FULL_DOT -1
+#define HALF 2
+#define HALG_DOT -2
+#define QART 4
+#define QART_DOT -4
+#define EIGT 8
+#define EIGT_DOT -8
+#define SIXT 16
+#define SIXT_DOT -16
+#define THRT 32
+#define THRT_DOT -32
+
 #define NOTE_END 9999
 
 class MusicPlayer {
 private:
-  int _tempo;
   int _buzzerPin;
-  int _wholenote;
+  
   const int *_melody;
-  long _nextEventTime;
+  int _wholenote;
+  
   int _currentNote;
-  bool _playing;
   long _nextNoteTime;
+  bool _playing;
+  bool _notePlayed;
 
 public:
   MusicPlayer(int buzzerPin);
-  MusicPlayer(int buzzerPin, int tempo);
 
   void play(const int *melody);
   void tick();
+  bool isNotePlayed();
 };
 
 #endif

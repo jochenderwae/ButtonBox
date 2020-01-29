@@ -2,46 +2,57 @@
 #include <avr/pgmspace.h>
 #include "MusicPlayer.h"
 
-MusicPlayer::MusicPlayer(int buzzerPin) : MusicPlayer(buzzerPin, 144) {
+
+MusicPlayer::MusicPlayer(int buzzerPin) : _buzzerPin(buzzerPin), _playing(false), 
+                                          _melody(NULL), _currentNote(0),
+                                          _nextNoteTime(0), _notePlayed(false) {
 }
 
-MusicPlayer::MusicPlayer(int buzzerPin, int tempo) : _buzzerPin(buzzerPin), _tempo(tempo), _playing(false) {
-  _wholenote = (60000 * 4) / _tempo;
-}
+
 
 void MusicPlayer::play(const int *melody) {
+  // ignore if something is playing
   if(_playing) {
     return;
   }
   
   _melody = melody;
-  _nextEventTime = 0;
   _currentNote = 0;
   _playing = true;
   _nextNoteTime = 0;
+
+  // the first value is the tempo
+  int tempo = pgm_read_word_near(_melody + _currentNote);
+  _currentNote++;
+  _wholenote = (60 * 1000 * 4) / tempo;
 }
 
+
+
 void MusicPlayer::tick() {
-   // iterate over the notes of the melody.
-  // Remember, the array is twice the number of notes (notes + durations)
+  // if nothing is playing, skip
   if(!_playing) {
     return;
   }
 
+  // if it's not yet time to play the next note, skip
   if(_nextNoteTime > millis()) {
+    _notePlayed = false;
     return;
   }
 
-  int note = pgm_read_word_near(_melody + _currentNote);
+  // read the next note and duration
+  int note    = pgm_read_word_near(_melody + _currentNote);
+  int divider = pgm_read_word_near(_melody + _currentNote + 1);
+
+  // if we reached the end of the song, stop playing and skip
   if(note == NOTE_END) {
     _playing = false;
     return;
   }
   
   // calculates the duration of each note
-  int divider = pgm_read_word_near(_melody + _currentNote + 1);
   int noteDuration = 0;
-  
   if (divider > 0) {
     // regular note, just proceed
     noteDuration = (_wholenote) / divider;
@@ -51,17 +62,22 @@ void MusicPlayer::tick() {
     noteDuration *= 1.5; // increases the duration in half for dotted notes
   }
 
+  // calculate the time to start the next note
   _nextNoteTime = millis() + noteDuration;
   
 
-  // we only play the note for 90% of the duration, leaving 10% as a pause
-  tone(_buzzerPin, note, noteDuration * 0.9);
+  // don't play anything if it's a rest note
+  if(note != REST) {
+    // we only play the note for 90% of the duration, leaving 10% as a pause
+    _notePlayed = true;
+    tone(_buzzerPin, note, noteDuration * 0.9);
+  }
 
-  // Wait for the specief duration before playing the next note.
-  //delay(_noteDuration);
-
-  // stop the waveform generation before the next note.
-  //noTone(_buzzerPin);
-
+  // move pointer to the next note
   _currentNote = _currentNote + 2;
+}
+
+
+bool MusicPlayer::isNotePlayed() {
+  return _notePlayed;
 }

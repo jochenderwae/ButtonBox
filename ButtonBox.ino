@@ -160,9 +160,9 @@ void loop()
     ioDevicePinMode(multiIo, i, (pos % 8 == i % 8) ? HIGH : LOW);
   }
   ioDevicePinMode(multiIo, BAR_LED_0,      bar       ? HIGH : LOW);
-  ioDevicePinMode(multiIo, BAR_LED_0,      bar       ? HIGH : LOW);
-  ioDevicePinMode(multiIo, BAR_LED_0,      bar       ? HIGH : LOW);
-  ioDevicePinMode(multiIo, BAR_LED_0,      bar       ? HIGH : LOW);
+  ioDevicePinMode(multiIo, BAR_LED_1,      bar       ? HIGH : LOW);
+  ioDevicePinMode(multiIo, BAR_LED_2,      bar       ? HIGH : LOW);
+  ioDevicePinMode(multiIo, BAR_LED_3,      bar       ? HIGH : LOW);
   ioDevicePinMode(multiIo, I_II_LED_I,     (i_ii == -1)   ? HIGH : LOW);
   ioDevicePinMode(multiIo, I_II_LED_II,    (i_ii == 1)    ? HIGH : LOW);
   ioDevicePinMode(multiIo, ROUND_LED,      roundB         ? HIGH : LOW);
