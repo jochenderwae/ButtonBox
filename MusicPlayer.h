@@ -99,7 +99,7 @@
 #define FULL 1
 #define FULL_DOT -1
 #define HALF 2
-#define HALG_DOT -2
+#define HALF_DOT -2
 #define QART 4
 #define QART_DOT -4
 #define EIGT 8
@@ -118,7 +118,8 @@ private:
   const int *_melody;
   int _wholenote;
   
-  int _currentNote;
+  int _currentNoteIndex;
+  int _note;
   long _nextNoteTime;
   bool _playing;
   bool _notePlayed;
@@ -129,6 +130,8 @@ public:
   void play(const int *melody);
   void tick();
   bool isNotePlayed();
+  bool isPlaying();
+  int getLastNote();
 };
 
 #endif

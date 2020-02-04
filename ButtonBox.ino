@@ -1,3 +1,9 @@
+#include <WiFiManager.h>
+#include <ESP8266WiFi.h>
+#include <WiFiUdp.h>
+#include <ESP8266mDNS.h>
+#include <ArduinoOTA.h>
+
 #include <IoAbstraction.h>
 #include <IoAbstractionWire.h>
 #include <Wire.h>
@@ -7,6 +13,9 @@
 MultiIoAbstractionRef multiIo = multiIoExpander(10);
 // https://github.com/davetcc/IoAbstraction
 
+/*
+ * IO definitions
+ */
 #define ENCODER_A 10
 #define ENCODER_B 11
 #define ENCODER_BUTTON 12
@@ -58,18 +67,94 @@ MultiIoAbstractionRef multiIo = multiIoExpander(10);
 #define SLIDE_LED_1 61
 #define SLIDE_LED_2 60
 
+byte allLeds[] = {
+  BAR_LED_0, BAR_LED_1, BAR_LED_2, BAR_LED_3,
+  CIRCLE_0, CIRCLE_1, CIRCLE_2, CIRCLE_3,
+  CIRCLE_4, CIRCLE_5, CIRCLE_6, CIRCLE_7,
+  ROUND_LED, I_II_LED_I, I_II_LED_II, TRIANGLE_LED_0,
+  TRIANGLE_LED_1, TRIANGLE_LED_2, TOGGLE_LED_L, TOGGLE_LED_R,
+  SQUARE_LED_0, SQUARE_LED_1, SQUARE_LED_2, SQUARE_LED_3,
+  I_LED, GREEN_LED, SLIDE_LED_0, SLIDE_LED_1, SLIDE_LED_2};
+int ledCount = sizeof(allLeds) / sizeof(allLeds[0]);
 
 
+/*
+ * Music
+ */
+extern const PROGMEM int asabranca[];
 extern const PROGMEM int bloodytears[];
+extern const PROGMEM int cannonInD[];
+extern const PROGMEM int cantina[];
+extern const PROGMEM int greenHillZone[];
+extern const PROGMEM int greenSleeves[];
+extern const PROGMEM int hedwigsTheme[];
+extern const PROGMEM int imperialMarch[];
+extern const PROGMEM int keyboardCat[];
+extern const PROGMEM int miiChannelTheme[];
+extern const PROGMEM int minueteInG[];
+extern const PROGMEM int nokiaRingtone[];
 extern const PROGMEM int odeToJoy[];
+extern const PROGMEM int overworldTheme[];
+extern const PROGMEM int pacman[];
+extern const PROGMEM int pinkPanther[];
+extern const PROGMEM int princeIgor[];
+extern const PROGMEM int professorLaytonsTheme[];
+extern const PROGMEM int puloDaGaita[];
+extern const PROGMEM int songOfStorms[];
+extern const PROGMEM int starWars[];
+extern const PROGMEM int takeOnMe[];
+extern const PROGMEM int tetris[];
+extern const PROGMEM int theLick[];
+extern const PROGMEM int theLionSleepsTonight[];
+extern const PROGMEM int zeldaLullaby[];
+
 MusicPlayer musicPlayer = MusicPlayer(D4);
 
+/**
+ * WiFi stuff
+ */
+WiFiServer server(80);
+WiFiManager wifiManager;
 
-
+/**
+ * set up rotary encoder
+ */
 LoopingRotaryEncoder encoder = LoopingRotaryEncoder(multiIo, ENCODER_A, ENCODER_B);
 
 void setup()
 {
+  Serial.begin(115200);
+
+  wifiManager.autoConnect("ButtonBox");
+
+  Serial.println("");
+  Serial.println("WiFi connected.");
+  Serial.println("IP address: ");
+  Serial.println(WiFi.localIP());
+  //server.begin();
+
+  ArduinoOTA.onStart([]() {
+    Serial.println("Start");
+  });
+  ArduinoOTA.onEnd([]() {
+    Serial.println("\nEnd");
+  });
+  ArduinoOTA.onProgress([](unsigned int progress, unsigned int total) {
+    Serial.printf("Progress: %u%%\r", (progress / (total / 100)));
+  });
+  ArduinoOTA.onError([](ota_error_t error) {
+    Serial.printf("Error[%u]: ", error);
+    if (error == OTA_AUTH_ERROR) Serial.println("Auth Failed");
+    else if (error == OTA_BEGIN_ERROR) Serial.println("Begin Failed");
+    else if (error == OTA_CONNECT_ERROR) Serial.println("Connect Failed");
+    else if (error == OTA_RECEIVE_ERROR) Serial.println("Receive Failed");
+    else if (error == OTA_END_ERROR) Serial.println("End Failed");
+  });
+  ArduinoOTA.begin();
+  Serial.println("Ready");
+
+  
+  
   Wire.begin();
   multiIoAddExpander(multiIo, ioFrom8574(0x20, D5), 10);
   multiIoAddExpander(multiIo, ioFrom8574(0x21), 10);
@@ -129,13 +214,16 @@ void setup()
   ioDevicePinMode(multiIo, SLIDE_LED_1, INPUT);
   ioDevicePinMode(multiIo, SLIDE_LED_2, INPUT);
 
-  //Wire.begin();
-  Serial.begin(9600);
+
+  musicPlayer.play(nokiaRingtone);
 }
 
 long pos = 0;
 int bar = 0;
 
+bool barB = false;
+bool prevBarB = false;
+bool barBTime = 0;
 bool roundB = false;
 bool i_b = false;
 bool ii_b = false;
@@ -155,32 +243,51 @@ int slider = 0;
 
 void loop()
 {
+  ArduinoOTA.handle();
+  
   musicPlayer.tick();
-  for(int i = 20; i < 28; i++) {
-    ioDevicePinMode(multiIo, i, (pos % 8 == i % 8) ? HIGH : LOW);
+  if(musicPlayer.isPlaying()) {
+    if(musicPlayer.isNotePlayed()) {
+      randomSeed(musicPlayer.getLastNote());
+      int ledOnCount = 5;
+      for(int ledIndex = 0; ledIndex < ledCount; ledIndex++) {
+        bool ledOn = false;
+        if(ledOnCount > 0) {
+          if(ledOnCount >= random(0, ledCount - ledIndex)) {
+            ledOn = true;
+            ledOnCount--;
+          }
+        }
+        ioDevicePinMode(multiIo, allLeds[ledIndex], ledOn ? HIGH : LOW);
+      }
+    }
+  } else {
+    for(int i = 20; i < 28; i++) {
+      ioDevicePinMode(multiIo, i, (pos % 8 == i % 8) ? HIGH : LOW);
+    }
+    ioDevicePinMode(multiIo, BAR_LED_0,      bar == 0       ? HIGH : LOW);
+    ioDevicePinMode(multiIo, BAR_LED_1,      bar == 1       ? HIGH : LOW);
+    ioDevicePinMode(multiIo, BAR_LED_2,      bar == 2       ? HIGH : LOW);
+    ioDevicePinMode(multiIo, BAR_LED_3,      bar == 3       ? HIGH : LOW);
+    ioDevicePinMode(multiIo, I_II_LED_I,     (i_ii == -1)   ? HIGH : LOW);
+    ioDevicePinMode(multiIo, I_II_LED_II,    (i_ii == 1)    ? HIGH : LOW);
+    ioDevicePinMode(multiIo, ROUND_LED,      roundB         ? HIGH : LOW);
+    ioDevicePinMode(multiIo, TRIANGLE_LED_0, triangle       ? HIGH : LOW);
+    ioDevicePinMode(multiIo, TRIANGLE_LED_1, triangle       ? HIGH : LOW);
+    ioDevicePinMode(multiIo, TRIANGLE_LED_2, triangle       ? HIGH : LOW);
+    ioDevicePinMode(multiIo, TOGGLE_LED_L,   (toggle == -1) ? HIGH : LOW);
+    ioDevicePinMode(multiIo, TOGGLE_LED_R,   (toggle == 1)  ? HIGH : LOW);
+    ioDevicePinMode(multiIo, SQUARE_LED_0,   square         ? HIGH : LOW);
+    ioDevicePinMode(multiIo, SQUARE_LED_1,   square         ? HIGH : LOW);
+    ioDevicePinMode(multiIo, SQUARE_LED_2,   square         ? HIGH : LOW);
+    ioDevicePinMode(multiIo, SQUARE_LED_3,   square         ? HIGH : LOW);
+    ioDevicePinMode(multiIo, I_LED,          io             ? HIGH : LOW);
+    ioDevicePinMode(multiIo, SLIDE_LED_0,    (slider == 0)  ? HIGH : LOW);
+    ioDevicePinMode(multiIo, SLIDE_LED_1,    (slider == 1)  ? HIGH : LOW);
+    ioDevicePinMode(multiIo, SLIDE_LED_2,    (slider == 2)  ? HIGH : LOW);
+    ioDevicePinMode(multiIo, GREEN_LED,      green          ? HIGH : LOW);
   }
-  ioDevicePinMode(multiIo, BAR_LED_0,      bar       ? HIGH : LOW);
-  ioDevicePinMode(multiIo, BAR_LED_1,      bar       ? HIGH : LOW);
-  ioDevicePinMode(multiIo, BAR_LED_2,      bar       ? HIGH : LOW);
-  ioDevicePinMode(multiIo, BAR_LED_3,      bar       ? HIGH : LOW);
-  ioDevicePinMode(multiIo, I_II_LED_I,     (i_ii == -1)   ? HIGH : LOW);
-  ioDevicePinMode(multiIo, I_II_LED_II,    (i_ii == 1)    ? HIGH : LOW);
-  ioDevicePinMode(multiIo, ROUND_LED,      roundB         ? HIGH : LOW);
-  ioDevicePinMode(multiIo, TRIANGLE_LED_0, triangle       ? HIGH : LOW);
-  ioDevicePinMode(multiIo, TRIANGLE_LED_1, triangle       ? HIGH : LOW);
-  ioDevicePinMode(multiIo, TRIANGLE_LED_2, triangle       ? HIGH : LOW);
-  ioDevicePinMode(multiIo, TOGGLE_LED_L,   (toggle == -1) ? HIGH : LOW);
-  ioDevicePinMode(multiIo, TOGGLE_LED_R,   (toggle == 1)  ? HIGH : LOW);
-  ioDevicePinMode(multiIo, SQUARE_LED_0,   square         ? HIGH : LOW);
-  ioDevicePinMode(multiIo, SQUARE_LED_1,   square         ? HIGH : LOW);
-  ioDevicePinMode(multiIo, SQUARE_LED_2,   square         ? HIGH : LOW);
-  ioDevicePinMode(multiIo, SQUARE_LED_3,   square         ? HIGH : LOW);
-  ioDevicePinMode(multiIo, I_LED,          io             ? HIGH : LOW);
-  ioDevicePinMode(multiIo, SLIDE_LED_0,    (slider == 0)  ? HIGH : LOW);
-  ioDevicePinMode(multiIo, SLIDE_LED_1,    (slider == 1)  ? HIGH : LOW);
-  ioDevicePinMode(multiIo, SLIDE_LED_2,    (slider == 2)  ? HIGH : LOW);
-  ioDevicePinMode(multiIo, GREEN_LED,      green          ? HIGH : LOW);
-
+  
   ioDeviceSync(multiIo);
 
   encoder.tick();
@@ -194,8 +301,7 @@ void loop()
   }
   
   //encoder = ioDeviceDigitalRead(multiIo, ENCODER_BUTTON) == 0;
-  bar = ioDeviceDigitalRead(multiIo, BAR_BUTTON) == 0 ? 0 : 1;
-  
+  barB     = ioDeviceDigitalRead(multiIo, BAR_BUTTON) == 0;
   roundB   = ioDeviceDigitalRead(multiIo, ROUND_BUTTON) == 0;
   i_b      = ioDeviceDigitalRead(multiIo, I_II_BUTTON_I) == 0;
   ii_b     = ioDeviceDigitalRead(multiIo, I_II_BUTTON_II) == 0;
@@ -233,8 +339,25 @@ void loop()
     slider = 2;
   }
 
+  if(barB && ! prevBarB) {
+    barBTime = millis();
+  }
+  prevBarB = barB;
+  if(barB) {
+    bar = ((millis() - barBTime) / 1000) % 4;
+  }
+
   if(io) {
-    musicPlayer.play(odeToJoy);
+    switch(bar) {
+      case 0:
+        musicPlayer.play(cannonInD/*odeToJoy*/);
+      case 1:
+        musicPlayer.play(theLick);
+      case 2:
+        musicPlayer.play(keyboardCat/*pacman*/);
+      case 3:
+        musicPlayer.play(minueteInG/*bloodytears*/);
+    }
   }
   
   //delay(50);

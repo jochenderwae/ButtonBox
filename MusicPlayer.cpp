@@ -4,8 +4,9 @@
 
 
 MusicPlayer::MusicPlayer(int buzzerPin) : _buzzerPin(buzzerPin), _playing(false), 
-                                          _melody(NULL), _currentNote(0),
-                                          _nextNoteTime(0), _notePlayed(false) {
+                                          _melody(NULL), _currentNoteIndex(0),
+                                          _nextNoteTime(0), _notePlayed(false),
+                                          _note(NOTE_END) {
 }
 
 
@@ -17,13 +18,14 @@ void MusicPlayer::play(const int *melody) {
   }
   
   _melody = melody;
-  _currentNote = 0;
+  _currentNoteIndex = 0;
   _playing = true;
   _nextNoteTime = 0;
+  _note = NOTE_END;
 
   // the first value is the tempo
-  int tempo = pgm_read_word_near(_melody + _currentNote);
-  _currentNote++;
+  int tempo = pgm_read_word_near(_melody + _currentNoteIndex);
+  _currentNoteIndex++;
   _wholenote = (60 * 1000 * 4) / tempo;
 }
 
@@ -42,23 +44,19 @@ void MusicPlayer::tick() {
   }
 
   // read the next note and duration
-  int note    = pgm_read_word_near(_melody + _currentNote);
-  int divider = pgm_read_word_near(_melody + _currentNote + 1);
+  _note       = (short)pgm_read_word_near(_melody + _currentNoteIndex);
+  int divider = (short)pgm_read_word_near(_melody + _currentNoteIndex + 1);
 
   // if we reached the end of the song, stop playing and skip
-  if(note == NOTE_END) {
+  if(_note == NOTE_END) {
     _playing = false;
     return;
   }
   
   // calculates the duration of each note
-  int noteDuration = 0;
-  if (divider > 0) {
-    // regular note, just proceed
-    noteDuration = (_wholenote) / divider;
-  } else if (divider < 0) {
+  int noteDuration = _wholenote / abs(divider);
+  if(divider < 0) {
     // dotted notes are represented with negative durations!!
-    noteDuration = (_wholenote) / abs(divider);
     noteDuration *= 1.5; // increases the duration in half for dotted notes
   }
 
@@ -67,17 +65,25 @@ void MusicPlayer::tick() {
   
 
   // don't play anything if it's a rest note
-  if(note != REST) {
+  if(_note != REST) {
     // we only play the note for 90% of the duration, leaving 10% as a pause
     _notePlayed = true;
-    tone(_buzzerPin, note, noteDuration * 0.9);
+    tone(_buzzerPin, _note, noteDuration * 0.9);
   }
 
   // move pointer to the next note
-  _currentNote = _currentNote + 2;
+  _currentNoteIndex += 2;
 }
 
 
 bool MusicPlayer::isNotePlayed() {
   return _notePlayed;
+}
+
+bool MusicPlayer::isPlaying() {
+  return _playing;
+}
+
+int MusicPlayer::getLastNote() {
+  return _note;
 }
