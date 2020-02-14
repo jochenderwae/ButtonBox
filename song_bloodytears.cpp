@@ -12,7 +12,7 @@ extern const PROGMEM int bloodytears[] = {
   144, // tempo
   
   //B-flat major Bb Eb
-  REST,     QART,      NOTE_G5,  QART,
+  NOTE_G5,  QART,
   NOTE_A5,  QART,      NOTE_AS5, QART,
   NOTE_A5,  QART,      NOTE_F5,  QART,
   NOTE_A5,  QART,      NOTE_G5,  QART,

@@ -108,7 +108,22 @@ extern const PROGMEM int theLick[];
 extern const PROGMEM int theLionSleepsTonight[];
 extern const PROGMEM int zeldaLullaby[];
 
+const int *allSongs[] = {
+  asabranca, bloodytears, cannonInD, cantina, greenHillZone, greenSleeves, hedwigsTheme, imperialMarch,
+  keyboardCat, miiChannelTheme, minueteInG, odeToJoy, overworldTheme, pacman, pinkPanther, princeIgor,
+  professorLaytonsTheme, puloDaGaita, songOfStorms, starWars, takeOnMe, tetris, theLionSleepsTonight, zeldaLullaby
+};
+
 MusicPlayer musicPlayer = MusicPlayer(D4);
+
+enum BBState {
+  BBState_Buttons,
+  BBState_Music,
+  BBState_Game1,
+  BBState_Game2
+};
+
+BBState state = BBState_Buttons;
 
 /**
  * WiFi stuff
@@ -131,7 +146,7 @@ void setup()
   Serial.println("WiFi connected.");
   Serial.println("IP address: ");
   Serial.println(WiFi.localIP());
-  //server.begin();
+  server.begin();
 
   ArduinoOTA.onStart([]() {
     Serial.println("Start");
@@ -223,7 +238,6 @@ int bar = 0;
 
 bool barB = false;
 bool prevBarB = false;
-bool barBTime = 0;
 bool roundB = false;
 bool i_b = false;
 bool ii_b = false;
@@ -240,6 +254,8 @@ bool slider2 = false;
 int i_ii = 0;
 int toggle = 0;
 int slider = 0;
+
+unsigned long  barBTime = 0;
 
 void loop()
 {
@@ -344,21 +360,74 @@ void loop()
   }
   prevBarB = barB;
   if(barB) {
-    bar = ((millis() - barBTime) / 1000) % 4;
-  }
-
-  if(io) {
-    switch(bar) {
-      case 0:
-        musicPlayer.play(cannonInD/*odeToJoy*/);
-      case 1:
-        musicPlayer.play(theLick);
-      case 2:
-        musicPlayer.play(keyboardCat/*pacman*/);
-      case 3:
-        musicPlayer.play(minueteInG/*bloodytears*/);
+    if((millis() - barBTime) > 1000) {
+      barBTime = millis();
+      bar++;
     }
   }
-  
+  bar = bar % 4;
+
+  if(state == BBState_Buttons) {
+    // don't do anything special
+  } else if(state == BBState_Music) {
+    if(triangle) {
+      musicPlayer.play(allSongs[8 * slider + pos]);
+    }
+    if(square) {
+      musicPlayer.stop();
+    }
+  } else if(state == BBState_Game1) {
+  } else if(state == BBState_Game2) {
+  }
+
+
+  WiFiClient client = server.available();
+  if (client) {
+    while (client.connected()) {
+      if (client.available()) {
+        String line = client.readStringUntil('\r');
+        if(line.indexOf("GET") >= 0) {
+          if(line.indexOf("mode=0") > 0) {
+              state = BBState_Buttons;
+          } else if(line.indexOf("mode=1") > 0) {
+              state = BBState_Music;
+          } else if(line.indexOf("mode=2") > 0) {
+              state = BBState_Game1;
+          } else if(line.indexOf("mode=3") > 0) {
+              state = BBState_Game2;
+          }
+        }
+        if(line.length() == 1 && line[0] == '\n') {
+          client.println(buildStatusHTML());
+          break;
+        }
+      }
+    }
+    delay(1); // give the web browser time to receive the data 
+    client.stop();
+  }
   //delay(50);
 }
+
+String buildStatusHTML() {
+  String htmlPage =
+     String("HTTP/1.1 200 OK\r\n") +
+            "Content-Type: text/html\r\n" +
+            "Connection: close\r\n" +
+            "\r\n" +
+            "<!DOCTYPE HTML>" +
+            "<html>" +
+            "<h1>Button Box</h1>" +
+            "<h2>Mode Select</h2>" +
+            "<form method=\"get\" action=\"/\"><input type=\"hidden\" name=\"mode\" value=\"0\"><input type=\"submit\" value=\"Buttons\">" + (state == BBState_Buttons?"*":"") + "</form><br>" +
+            "<form method=\"get\" action=\"/\"><input type=\"hidden\" name=\"mode\" value=\"1\"><input type=\"submit\" value=\"Music\">"   + (state == BBState_Music?"*":"")   + "</form><br>" +
+            "<form method=\"get\" action=\"/\"><input type=\"hidden\" name=\"mode\" value=\"2\"><input type=\"submit\" value=\"Game 1\">"  + (state == BBState_Game1?"*":"")   + "</form><br>" +
+            "<form method=\"get\" action=\"/\"><input type=\"hidden\" name=\"mode\" value=\"3\"><input type=\"submit\" value=\"Game 2\">"  + (state == BBState_Game2?"*":"")   + "</form><br>" +
+            "</html>" +
+            "\r\n";
+  return htmlPage;
+}
+
+/*
+
+*/

@@ -8,7 +8,7 @@ extern const PROGMEM int cantina[] = {
   // Cantina BAnd - Star wars 
   // Score available at https://musescore.com/user/6795541/scores/1606876
 
-  140, // tempo
+  200, // tempo
   
   NOTE_B4,-4, NOTE_E5,-4, NOTE_B4,-4, NOTE_E5,-4, 
   NOTE_B4,8,  NOTE_E5,-4, NOTE_B4,8, REST,8,  NOTE_AS4,8, NOTE_B4,8, 

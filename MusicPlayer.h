@@ -128,6 +128,7 @@ public:
   MusicPlayer(int buzzerPin);
 
   void play(const int *melody);
+  void stop();
   void tick();
   bool isNotePlayed();
   bool isPlaying();

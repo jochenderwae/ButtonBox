@@ -30,6 +30,17 @@ void MusicPlayer::play(const int *melody) {
 }
 
 
+void MusicPlayer::stop() {
+  if(!_playing) {
+    return;
+  }
+  _playing = false;
+  _melody = NULL;
+  _note = NOTE_END;
+  _nextNoteTime = 0;
+  _currentNoteIndex = 0;
+}
+
 
 void MusicPlayer::tick() {
   // if nothing is playing, skip

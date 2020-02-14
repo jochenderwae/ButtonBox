@@ -10,7 +10,7 @@ extern const PROGMEM int hedwigsTheme[] = {
 
   144, // tempo
   
-  REST, 2, NOTE_D4, 4,
+  NOTE_D4, 4,
   NOTE_G4, -4, NOTE_AS4, 8, NOTE_A4, 4,
   NOTE_G4, 2, NOTE_D5, 4,
   NOTE_C5, -2, 

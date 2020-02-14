@@ -8,7 +8,7 @@ extern const PROGMEM int pinkPanther[] = {
   
   120, // tempo
   
-  REST,     HALF,     REST,     QART,     REST,     EIGT,     NOTE_DS4, EIGT, 
+  NOTE_DS4, EIGT, 
   NOTE_E4,  QART_DOT, REST,     EIGT,     NOTE_FS4, EIGT,     NOTE_G4,  QART_DOT, REST,     EIGT,     NOTE_DS4, EIGT,
   NOTE_E4,  EIGT_DOT, NOTE_FS4, EIGT,     NOTE_G4,  EIGT_DOT, NOTE_C5,  EIGT,     NOTE_B4,  EIGT_DOT, NOTE_E4,  EIGT,     NOTE_G4,  EIGT_DOT, NOTE_B4, EIGT,   
   NOTE_AS4, HALF,     NOTE_A4,  SIXT_DOT, NOTE_G4,  SIXT_DOT, NOTE_E4,  SIXT_DOT, NOTE_D4,  SIXT_DOT, 

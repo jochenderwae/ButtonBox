@@ -10,8 +10,6 @@ extern const PROGMEM int keyboardCat[] = {
 
   160, // tempo
   
-  REST,1,
-	REST,1,
 	NOTE_C4,4, NOTE_E4,4, NOTE_G4,4, NOTE_E4,4, 
 	NOTE_C4,4, NOTE_E4,8, NOTE_G4,-4, NOTE_E4,4,
 	NOTE_A3,4, NOTE_C4,4, NOTE_E4,4, NOTE_C4,4,

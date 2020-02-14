@@ -11,7 +11,7 @@ extern const PROGMEM int greenHillZone[] = {
 
   140, // tempo
   
-  REST,2, NOTE_D5,8, NOTE_B4,4, NOTE_D5,8, //1
+  NOTE_D5,8, NOTE_B4,4, NOTE_D5,8, //1
   NOTE_CS5,4, NOTE_D5,8, NOTE_CS5,4, NOTE_A4,2, 
   REST,8, NOTE_A4,8, NOTE_FS5,8, NOTE_E5,4, NOTE_D5,8,
   NOTE_CS5,4, NOTE_D5,8, NOTE_CS5,4, NOTE_A4,2, 
